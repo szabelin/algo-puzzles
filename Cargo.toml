@@ -1,0 +1,11 @@
+[package]
+name = "algo-puzzles"
+version = "0.1.0"
+edition = "2021"
+description = "Interactive algorithm puzzles — Gambler's Ruin & Egg Drop in Rust"
+license = "MIT"
+readme = "README.md"
+
+[[bin]]
+name = "algo-puzzles"
+path = "src/main.rs"

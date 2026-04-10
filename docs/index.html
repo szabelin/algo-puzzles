@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Algorithm Puzzles — Interactive Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Crimson+Pro:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b; --surface: #141416; --surface2: #1c1c20;
+    --border: #2a2a30; --text: #e4e4e8; --dim: #8888a0;
+    --red: #ef4444; --red-dim: #7f1d1d; --amber: #f59e0b;
+    --violet: #8b5cf6; --violet-dim: #3b1d8e; --teal: #14b8a6;
+    --mono: 'JetBrains Mono', monospace; --serif: 'Crimson Pro', serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--mono); font-size:13px; line-height:1.6; }
+
+  .header { padding:40px 32px 28px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,#111114,var(--bg)); }
+  .header h1 { font-family:var(--serif); font-size:42px; font-weight:900; letter-spacing:-1px;
+    background:linear-gradient(135deg,var(--red),var(--amber),var(--violet));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .header p { font-size:11px; color:var(--dim); letter-spacing:3px; text-transform:uppercase; margin-top:8px; }
+
+  .tabs { display:flex; border-bottom:1px solid var(--border); background:var(--surface); }
+  .tab { padding:14px 28px; cursor:pointer; font-family:var(--mono); font-size:11px; font-weight:500;
+    letter-spacing:1px; text-transform:uppercase; color:var(--dim); border:none; background:transparent;
+    border-bottom:3px solid transparent; transition:all 0.2s; }
+  .tab:hover { color:var(--text); }
+  .tab.active-g { color:var(--red); border-bottom-color:var(--red); background:var(--bg); }
+  .tab.active-e { color:var(--violet); border-bottom-color:var(--violet); background:var(--bg); }
+
+  .panel { display:none; padding:32px; } .panel.active { display:block; }
+  .problem-header { margin-bottom:24px; }
+  .problem-header h2 { font-size:28px; font-weight:700; margin-bottom:4px; }
+  .problem-header .sub { font-size:12px; color:var(--dim); }
+
+  .rec-box { padding:18px 24px; background:var(--surface); border-radius:10px; border:1px solid var(--border); margin-bottom:24px; }
+  .rec-box .label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--dim); margin-bottom:6px; }
+  .rec-box .formula { font-size:15px; font-weight:600; }
+  .rec-box .base { font-size:12px; color:var(--dim); margin-top:4px; }
+
+  .insight { padding:20px; background:var(--surface2); border-radius:10px; border:1px solid var(--border); margin-bottom:24px; line-height:1.8; }
+  .insight h3 { font-size:13px; margin-bottom:10px; font-weight:600; }
+  .insight code { background:var(--bg); padding:2px 6px; border-radius:4px; font-size:12px; }
+  .cycle { color:var(--red); font-weight:600; } .dag { color:var(--teal); font-weight:600; }
+
+  .controls { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end; margin-bottom:24px;
+    padding:20px; background:var(--surface); border-radius:10px; border:1px solid var(--border); }
+  .cg { display:flex; flex-direction:column; gap:4px; }
+  .cg label { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--dim); }
+  .cg input { padding:8px 12px; background:var(--bg); border:1px solid var(--border); border-radius:6px;
+    color:var(--text); font-family:var(--mono); font-size:14px; width:120px; }
+  .cg input:focus { outline:none; border-color:var(--violet); }
+
+  button.solve { padding:10px 28px; border:none; border-radius:8px; font-family:var(--mono); font-size:12px;
+    font-weight:700; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:transform 0.1s; }
+  button.solve:hover { transform:translateY(-1px); }
+  .solve-r { background:var(--red); color:#fff; box-shadow:0 4px 20px rgba(239,68,68,0.3); }
+  .solve-v { background:var(--violet); color:#fff; box-shadow:0 4px 20px rgba(139,92,246,0.3); }
+
+  .result { padding:16px 20px; background:var(--surface); border-radius:10px; border:1px solid var(--border); margin-bottom:20px; font-size:14px; }
+  .result .answer { font-size:22px; font-weight:700; }
+
+  .viz { margin-top:20px; }
+  .viz-label { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--dim); margin-bottom:8px; }
+  .bar-chart { display:flex; align-items:flex-end; gap:2px; height:150px; padding:8px 0; }
+  .bar-col { display:flex; flex-direction:column; align-items:center; flex:1; min-width:10px; max-width:36px; }
+  .bar-val { font-size:7px; color:var(--dim); margin-bottom:3px; white-space:nowrap; }
+  .bar-fill { width:100%; border-radius:3px 3px 0 0; transition:height 0.4s ease-out; min-height:2px; }
+  .bar-lbl { font-size:7px; color:var(--dim); margin-top:3px; }
+
+  .hm-wrap { overflow-x:auto; }
+  .hm { display:inline-flex; flex-direction:column; gap:1px; }
+  .hm-row { display:flex; gap:1px; }
+  .hm-cell { width:32px; height:26px; display:flex; align-items:center; justify-content:center;
+    font-size:9px; border-radius:2px; transition:background-color 0.3s; }
+  .note { font-size:11px; color:var(--dim); font-style:italic; margin-top:6px; }
+
+  @media(max-width:600px) {
+    .header { padding:24px 16px 16px; } .header h1 { font-size:28px; }
+    .panel { padding:16px; } .controls { padding:12px; gap:10px; } .cg input { width:80px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Algorithm Puzzles</h1>
+  <p>Interactive DP &amp; Optimization — Edit inputs, hit Solve</p>
+</div>
+
+<div class="tabs" role="tablist" aria-label="Algorithm problems">
+  <button class="tab active-g" id="tab-g" onclick="sw('g')" role="tab" aria-selected="true" aria-controls="panel-g" tabindex="0">Gambler's Ruin</button>
+  <button class="tab" id="tab-e" onclick="sw('e')" role="tab" aria-selected="false" aria-controls="panel-e" tabindex="-1">Egg Drop</button>
+</div>
+
+<!-- ═══ GAMBLER'S RUIN ═══ -->
+<div class="panel active" id="panel-g" role="tabpanel" aria-labelledby="tab-g">
+  <div class="problem-header">
+    <h2 style="color:var(--red)">Gambler's Ruin</h2>
+    <div class="sub">Bellman Equation · Value Iteration · MDP</div>
+  </div>
+  <div class="rec-box" style="border-color:var(--red-dim)">
+    <div class="label">Recurrence (Bellman Equation)</div>
+    <div class="formula" style="color:var(--red)">r(x) = max<sub>b</sub> [ p · r(x+b) + (1−p) · r(x−b) ]</div>
+    <div class="base">Base: r(0) = 0, r(T) = 1</div>
+  </div>
+  <div class="controls">
+    <div class="cg"><label>Start $</label><input type="number" id="g-start" value="50"></div>
+    <div class="cg"><label>Target $</label><input type="number" id="g-target" value="100"></div>
+    <div class="cg"><label>P(win)</label><input type="number" id="g-pwin" value="0.49" step="0.01"></div>
+    <button class="solve solve-r" onclick="solveG()">Solve</button>
+  </div>
+  <div id="g-res" class="result" style="display:none"></div>
+  <div class="viz">
+    <div class="viz-label">Value function r(x) — probability of winning from each state</div>
+    <div class="bar-chart" id="g-chart1"></div>
+  </div>
+  <div class="viz" style="margin-top:16px">
+    <div class="viz-label">Optimal bet size at each state</div>
+    <div class="bar-chart" id="g-chart2"></div>
+  </div>
+</div>
+
+<!-- ═══ EGG DROP ═══ -->
+<div class="panel" id="panel-e" role="tabpanel" aria-labelledby="tab-e">
+  <div class="problem-header">
+    <h2 style="color:var(--violet)">Egg Drop</h2>
+    <div class="sub">Minimax DP · Worst-Case Optimization</div>
+  </div>
+  <div class="rec-box" style="border-color:var(--violet-dim)">
+    <div class="label">Recurrence (Minimax)</div>
+    <div class="formula" style="color:var(--violet)">T(k,n) = 1 + min<sub>x</sub> [ max( T(k−1, x−1), T(k, n−x) ) ]</div>
+    <div class="base">Base: T(k,0) = 0, T(k,1) = 1, T(1,n) = n</div>
+  </div>
+  <div class="controls">
+    <div class="cg"><label>Eggs</label><input type="number" id="e-eggs" value="2"></div>
+    <div class="cg"><label>Floors</label><input type="number" id="e-floors" value="100"></div>
+    <button class="solve solve-v" onclick="solveE()">Solve</button>
+  </div>
+  <div id="e-res" class="result" style="display:none"></div>
+  <div class="viz">
+    <div class="viz-label">DP Table — T(eggs, floors)</div>
+    <div class="hm-wrap" id="e-hm"></div>
+  </div>
+  <div class="viz" style="margin-top:16px">
+    <div class="viz-label">Min trials vs. number of floors (fixed eggs)</div>
+    <div class="bar-chart" id="e-chart"></div>
+  </div>
+</div>
+
+<script>
+function sw(which) {
+  document.getElementById('panel-g').classList.toggle('active', which==='g');
+  document.getElementById('panel-e').classList.toggle('active', which==='e');
+  document.getElementById('tab-g').className = 'tab' + (which==='g' ? ' active-g' : '');
+  document.getElementById('tab-e').className = 'tab' + (which==='e' ? ' active-e' : '');
+  document.getElementById('tab-g').setAttribute('aria-selected', which==='g');
+  document.getElementById('tab-e').setAttribute('aria-selected', which==='e');
+  history.replaceState(null, '', '#' + (which==='g' ? 'gambler' : 'eggdrop'));
+  if (which==='e' && !document.getElementById('e-res').style.display.match(/block/)) solveE();
+}
+
+// Render a bar chart into the element with given id
+function bars(id, vals, lbls, color, mx) {
+  if (!mx) mx = 1;
+  let h = '';
+  for (let i = 0; i < vals.length; i++) {
+    const v = vals[i], ht = (v/mx)*120;
+    const d = typeof v==='number' ? (v%1===0 ? v : v.toFixed(4)) : v;
+    h += `<div class="bar-col"><div class="bar-val">${d}</div>
+      <div class="bar-fill" style="height:${Math.max(2,ht)}px;background:${color}"></div>
+      <div class="bar-lbl">${lbls[i]}</div></div>`;
+  }
+  document.getElementById(id).innerHTML = h;
+}
+
+function solveG() {
+  const start = Math.floor(+document.getElementById('g-start').value);
+  const T = Math.floor(+document.getElementById('g-target').value);
+  const p = +document.getElementById('g-pwin').value;
+  const res = document.getElementById('g-res');
+
+  // Validate without touching the inputs
+  if (!T || T < 2 || !start || start < 1 || start >= T || !p || p <= 0 || p >= 1) {
+    res.style.display='block';
+    res.innerHTML='<span style="color:var(--amber)">Need: Start ≥ 1, Target > Start, 0 &lt; P(win) &lt; 1</span>';
+    document.getElementById('g-chart1').innerHTML='';
+    document.getElementById('g-chart2').innerHTML='';
+    return;
+  }
+  res.style.display='block';
+  res.innerHTML='<span style="color:var(--dim)">Solving...</span>';
+  document.getElementById('g-chart1').innerHTML='';
+  document.getElementById('g-chart2').innerHTML='';
+
+  // Web Worker so the browser doesn't freeze on large targets
+  const code = `onmessage=function(e){
+    var T=e.data.T, p=e.data.p, q=1-p, start=e.data.start;
+    var r=new Float64Array(T+1), bb=new Int32Array(T+1);
+    for(var x=0;x<=T;x++) r[x]=x/T; r[0]=0; r[T]=1;
+    var iters=0, converged=false;
+    if(p>0.5){
+      var qp=q/p;
+      var qpT=Math.pow(qp,T);
+      var denom=1-qpT;
+      for(var x=1;x<T;x++){r[x]=(1-Math.pow(qp,x))/denom; bb[x]=1;}
+      iters=1; converged=true;
+    } else if(p===0.5){
+      for(var x=0;x<=T;x++){r[x]=x/T; bb[x]=1;}
+      iters=1; converged=true;
+    } else {
+      var tryAll=T<=300;
+      for(var it=0;it<10000;it++){
+        var md=0;
+        for(var x=1;x<T;x++){
+          var bv,b1;
+          if(tryAll){
+            bv=0; b1=1;
+            var mb=Math.min(x,T-x);
+            for(var b=1;b<=mb;b++){var v=p*r[x+b]+q*r[x-b]; if(v>bv){bv=v;b1=b;}}
+          } else {
+            b1=Math.min(x,T-x); bv=p*r[x+b1]+q*r[x-b1];
+          }
+          md=Math.max(md,Math.abs(r[x]-bv)); r[x]=bv; bb[x]=b1;
+        }
+        iters=it+1; if(md<1e-12){converged=true;break;}
+      }
+    }
+    var step=Math.max(1,Math.floor(T/30)), idx=[];
+    for(var i=0;i<=T;i+=step) idx.push(i);
+    if(idx[idx.length-1]!==T) idx.push(T);
+    var rVals=idx.map(function(i){return r[i]});
+    var bbVals=idx.map(function(i){return bb[i]});
+    postMessage({prob:r[start],bet:bb[start],iters:iters,converged:converged,
+      idx:idx,rVals:rVals,bbVals:bbVals,T:T,start:start,p:p,maxBet:Math.min(start,T-start)});
+  }`;
+  const blob = new Blob([code], {type:'text/javascript'});
+  const w = new Worker(URL.createObjectURL(blob));
+  w.postMessage({T, p, start});
+  w.onmessage = function(e) {
+    const d = e.data;
+    const convMsg = d.converged ? `Converged in ${d.iters} iterations` : `Stopped at ${d.iters} iterations (not fully converged)`;
+    const isBold = d.bet === d.maxBet;
+    const stratNote = (d.p < 0.5 && isBold)
+      ? `<div style="margin-top:8px;font-size:11px;color:var(--dim)">Bold play is optimal when p &lt; 0.5 — minimize rounds against the house edge.</div>`
+      : (d.p > 0.5 && d.bet === 1)
+      ? `<div style="margin-top:8px;font-size:11px;color:var(--dim)">Timid play is optimal when p &gt; 0.5 — grind out the edge over many small bets.</div>`
+      : '';
+    const pct = (d.prob * 100).toFixed(2);
+    document.getElementById('g-res').innerHTML=
+      `<div style="font-size:15px;margin-bottom:10px">Starting with <strong>$${d.start}</strong>, trying to reach <strong>$${d.T}</strong> with <strong>${(d.p*100).toFixed(0)}%</strong> win chance per bet:</div>`+
+      `<div style="margin-bottom:6px">Win probability: <span class="answer" style="color:var(--red)">${pct}%</span></div>`+
+      `<div style="margin-bottom:6px">Best bet: <strong>$${d.bet}</strong></div>`+
+      `<div style="color:var(--dim);font-size:11px">${convMsg}</div>`+stratNote;
+    bars('g-chart1',d.rVals,d.idx.map(function(i){return '$'+i}),'var(--red)',Math.max.apply(null,d.rVals));
+    bars('g-chart2',d.bbVals,d.idx.map(function(i){return '$'+i}),'#b91c1c',Math.max.apply(null,d.bbVals));
+    w.terminate();
+  };
+}
+
+function solveE() {
+  const K=Math.max(1,Math.floor(+document.getElementById('e-eggs').value));
+  const N=Math.max(1,Math.floor(+document.getElementById('e-floors').value));
+  const dp=Array.from({length:K+1},()=>new Array(N+1).fill(0));
+  for(let n=0;n<=N;n++) if(K>=1) dp[1][n]=n;
+  for(let k=1;k<=K;k++) dp[k][1]=1;
+  for(let k=2;k<=K;k++) for(let n=2;n<=N;n++) {
+    dp[k][n]=Infinity;
+    for(let x=1;x<=n;x++) { const w=1+Math.max(dp[k-1][x-1],dp[k][n-x]); dp[k][n]=Math.min(dp[k][n],w); }
+  }
+  document.getElementById('e-res').style.display='block';
+  document.getElementById('e-res').innerHTML=
+    `Min trials with ${K} egg${K>1?'s':''} and ${N} floor${N>1?'s':''}: `+
+    `<span class="answer" style="color:var(--violet)">${dp[K][N]}</span>`;
+  const sE=Math.min(K,8), sF=Math.min(N,25), mv=dp[K][N];
+  let h='<div class="hm">';
+  h+='<div class="hm-row"><div class="hm-cell" style="background:transparent;font-weight:600;font-size:8px;color:var(--dim)">e\\f</div>';
+  for(let n=0;n<=sF;n++) h+=`<div class="hm-cell" style="background:transparent;color:var(--dim);font-size:8px">${n}</div>`;
+  h+='</div>';
+  for(let k=1;k<=sE;k++) {
+    h+='<div class="hm-row">';
+    h+=`<div class="hm-cell" style="background:transparent;color:var(--dim);font-weight:600;font-size:10px">${k}</div>`;
+    for(let n=0;n<=sF;n++) {
+      const v=dp[k][n], int=mv>0?v/mv:0;
+      const bg=`rgba(139,92,246,${Math.max(0.05,int*0.85)})`, fg=int>0.5?'#fff':'#ccc';
+      h+=`<div class="hm-cell" style="background:${bg};color:${fg}" title="T(${k},${n})=${v}">${v===Infinity?'∞':v}</div>`;
+    }
+    h+='</div>';
+  }
+  h+='</div>';
+  if(N>sF) h+=`<div class="note">Showing first ${sF} floors. T(${K}, ${N}) = ${dp[K][N]}</div>`;
+  document.getElementById('e-hm').innerHTML=h;
+  const bs=Math.max(1,Math.floor(N/30)), bi=[];
+  for(let n=0;n<=N;n+=bs) bi.push(n);
+  if(bi[bi.length-1]!==N) bi.push(N);
+  bars('e-chart',bi.map(n=>dp[K][n]),bi.map(n=>''+n),'var(--violet)',dp[K][N]);
+}
+
+// Keyboard navigation: arrow keys switch between tabs
+document.querySelector('.tabs').addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    const isGambler = document.getElementById('tab-g').classList.contains('active-g');
+    sw(isGambler ? 'e' : 'g');
+    document.getElementById(isGambler ? 'tab-e' : 'tab-g').focus();
+    e.preventDefault();
+  }
+});
+
+// Handle deep links: #gambler or #eggdrop (fallback to gambler for unknown hashes)
+const hash = location.hash.replace('#','');
+if (hash === 'eggdrop') { sw('e'); } else { solveG(); }
+</script>
+</body>
+</html>
